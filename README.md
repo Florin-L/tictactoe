@@ -3,7 +3,7 @@ A proof-of-concept "client server" game implemented in Python featuring Twisted 
 
 This project serves different purposes:
 
-- help me acquiring new Python skills and improve the existing ones;
+- help me acquiring new Python skills and improving the existing ones;
 - help me discovering the Twisted event-driven networking engine and figuring out how to employ it (in a funny way).
 
 Some considerations regarding the "architecture"/"design" used in this proof-of-concept so far:
@@ -13,11 +13,15 @@ Some considerations regarding the "architecture"/"design" used in this proof-of-
 - the AI player runs in a separate process which is created by invoking the function reactor.spawnProcess;
 - the AI player process communicates with the game server process through stdin and stdout (StandardIO);
 - the AI player implements a very basic strategy (a.k.a. 'randomly choosing the next move');
-- the client is a simple console application.
+- the client is a simple console application;
+- the clients and the game server are supposed to run on the localhost.
 
-Future plans:
-- improve the AI player strategy using the MinMax algorithm;
-- implement a basic GUI client;
-- implement the cancelling of a runing game.
+Future plans (listed in a random order):
 
-
+- improve the AI player's strategy using the MinMax algorithm;
+- implement a (rather basic) GUI client;
+- implement the cancelling of a running game;
+- unit tests ...;
+- implement the game server as a REST API service;
+- configure the client to connect to a game server running on a remote machine;
+- implement a GOMOKU (five in a row) AI player. 
