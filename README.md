@@ -1,5 +1,5 @@
 # tictactoe
-A proof-of-concept "client server" game implemented in Python featuring Twisted (Reactor, Deffered, Perspective Broker, ProcessProtocol, StandardIO) and PyDispatch.
+A proof-of-concept "client server" game implemented in Python (2.7) featuring Twisted (Reactor, Deffered, Perspective Broker, ProcessProtocol, StandardIO) and PyDispatch.
 
 This project serves different purposes:
 
@@ -8,7 +8,7 @@ This project serves different purposes:
 
 Some considerations regarding the "architecture"/"design" used in this proof-of-concept so far:
 
-- the "game server" extends a root object and publishes methods to be called by the clients (the human players) to initiate and play a game (createGame, makeMove) or subscribe to and unsubscribe from the game events (addListener and removeListener respectively);
+- the "game server" extends a root object and publishes the methods to be called by the clients (the human players) to initiate, play a game (createGame, makeMove) and subscribe to/unsubscribe from the game events (addListener and removeListener respectively);
 - the components inside the game server are loosely coupled and use signals and handlers to communicate between (through PyDispatch);
 - the AI player runs in a separate process which is created by invoking the function reactor.spawnProcess;
 - the AI player process communicates with the game server process through stdin and stdout (StandardIO);
