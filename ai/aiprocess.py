@@ -80,6 +80,10 @@ class AiPlayerProtocol(basic.LineReceiver):
         i, j = int(row), int(col)
         self._moves.remove(i * 3 + j)
 
+        if self._moves.count == 0:
+            self.log.error('_do_move: no more available moves')
+            return
+
         # proceed with a random move
         seed()
         n = randint(0, len(self._moves) - 1)

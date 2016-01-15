@@ -97,9 +97,10 @@ class GameServer(pb.Root):
 
         game = self._games.get(guid)
         if game:
+            self.log.debug('listener for game {guid!s} added', guid=guid)
             game.listeners.append(obj)
         else:
-            self.log.error('No game with the uiid={uuid}', uuid=guid)
+            self.log.error('No game with the uiid={guid!s}', uuid=guid)
 
     def remote_removeListener(self, game_uuid, obj):
         """Removes an event listeners for a game instance.
@@ -108,6 +109,7 @@ class GameServer(pb.Root):
         game = self._games.get(guid)
         if game:
             game.listeners.remove(obj)
+            self.log.debug('listener for game {guid!s} removed', guid=guid)
         else:
             self.log.error('No game with the uiid={uuid}', uuid=guid)
 
