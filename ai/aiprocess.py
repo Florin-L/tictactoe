@@ -101,20 +101,18 @@ class AiPlayerProtocol(basic.LineReceiver):
                                                            row=m / 3,
                                                            col=m % 3))
 
+    def _do_quit(self, uuid):
+        self.log.debug("Quitting the game {uuid}", uuid=uuid)
+        self.transport.loseConnection()
+        reactor.stop()
 
-def _do_quit(self, uuid):
-    self.log.debug("Quitting the game {uuid}", uuid=uuid)
-    self.transport.loseConnection()
-    reactor.stop()
+    def _createLogFile(self, uuid):
+        logDirPath = '{cwd}\\..\\logs\\aiprocesses'.format(cwd=os.getcwd())
+        if not os.path.exists(logDirPath):
+            os.mkdir(logDirPath)
 
-
-def _createLogFile(self, uuid):
-    logDirPath = '{cwd}\\..\\logs\\aiprocesses'.format(cwd=os.getcwd())
-    if not os.path.exists(logDirPath):
-        os.mkdir(logDirPath)
-
-    logFilePath = '{dir}\\{uuid}.log'.format(dir=logDirPath, uuid=uuid)
-    log.startLogging(DailyLogFile.fromFullPath(logFilePath))
+        logFilePath = '{dir}\\{uuid}.log'.format(dir=logDirPath, uuid=uuid)
+        log.startLogging(DailyLogFile.fromFullPath(logFilePath))
 
 
 def main():

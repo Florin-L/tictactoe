@@ -135,7 +135,7 @@ class AiProcessProtocol(protocol.ProcessProtocol):
         if (row == -1) or (col == -1):
             self.log.debug('It seems that we are done. Game was over !')
             # stops the AI process
-            # self._sendQuitCmd()
+            self._sendQuitCmd()
             return
 
         dispatcher.send(Events.aiResponse, uuid=self.uuid, row=i, col=j)

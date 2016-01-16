@@ -34,6 +34,8 @@ cmd_disconnect = 'cmd_disconnect'
 cmd_move = 'move'
 cmd_resetCell = 'cmd_resetCell'
 
+ev_connectFailed = 'ev_connectFailed'
+
 ev_newGameOk = 'ev_newGameOk'
 ev_newGameFailure = 'ev_newGameFailure'
 
@@ -74,6 +76,13 @@ class Client(pb.Referenceable):
 
     def _disconnect(self):
         """Disconnects from the remote server."""
+        if not App.isConnected:
+            self.log.debug('Client._disconnect: stop the reactor and return')
+            reactor.stop()
+            return
+
+        self.log.debug('Client._disconnect: disconnecting from the server')
+
         d = self.server.callRemote('removeListener',
                                    self.uuid,
                                    self)
@@ -97,6 +106,7 @@ class Client(pb.Referenceable):
         """
         self.log.error('error getting object (reason: {reason!s}',
                        reason=reason)
+        dispatcher.send(signal=ev_connectFailed, error=reason)
 
     def _newGame(self):
         """Initiates the creation of a new game."""
@@ -311,10 +321,8 @@ class App(ttk.Tk):
 
     def _quit(self):
         """Sends the disconnecting signal to the listeners and then exits."""
+        self.log.debug('App - triggers the signal cmd_disconnect')
         dispatcher.send(signal='cmd_disconnect')
-
-        if not App.isConnected:
-            reactor.stop()
 
     def _onNewGame(self):
         self.log.debug('_onNewGame')
@@ -335,6 +343,8 @@ class App(ttk.Tk):
                            signal=ev_disconnectedFailed)
         dispatcher.connect(self._on_gameover,
                            signal=ev_gameOver)
+        dispatcher.connect(self._connect_failed,
+                           signal=ev_connectFailed)
 
     def _connected(self, guid):
         """Handles the signal 'ev_newGameOk'."""
@@ -367,6 +377,11 @@ class App(ttk.Tk):
         self.log.error(
                 'The client failed to be disconnected from the game server.')
         reactor.stop()
+
+    def _connect_failed(self, error):
+        tkMessageBox.showerror('Error',
+                               'Failed to connect to the remote machine.\n\n{msg}'.format(
+                                       msg=error))
 
     def _resetBoard(self):
         dispatcher.send(signal=cmd_resetCell)
