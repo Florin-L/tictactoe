@@ -1,6 +1,7 @@
+from pydispatch import dispatcher
 from twisted.internet import protocol, reactor
 from twisted.logger import Logger
-from pydispatch import dispatcher
+
 from model.events import Events
 
 
@@ -39,6 +40,7 @@ class AiProcessProtocol(protocol.ProcessProtocol):
                        symbol=self.symbol, depth=self.depth, uuid=self.uuid)
 
         dispatcher.connect(self._onAiMoveRequest, signal=Events.aiMove)
+        dispatcher.connect(self._onQuit, signal=Events.quit)
 
     def connectionMade(self):
         self.log.debug('Sending INIT command.')
@@ -90,6 +92,11 @@ class AiProcessProtocol(protocol.ProcessProtocol):
                                                        col=col)
         self.transport.write(cmd)
 
+    def _sendQuitCmd(self):
+        """Sends the command 'QUIT' to the AI process."""
+        cmd = 'QUIT {uuid:s}\n'.format(uuid=self.uuid)
+        self.transport.write(cmd)
+
     def _onAiMoveRequest(self, uuid, row, col):
         """Handler for the signal Events.aiMove."""
         if str(self.uuid) != str(uuid):
@@ -97,6 +104,14 @@ class AiProcessProtocol(protocol.ProcessProtocol):
 
         self.log.debug('Handle aiMove request for game {uuid}', uuid=uuid)
         self._sendMoveCmd(row, col)
+
+    def _onQuit(self, uuid):
+        """Handler for the signal Events.quit."""
+        if str(self.uuid) != str(uuid):
+            return
+
+        self.log.debug("Handles 'quit' command for game {uuid}", uuid=uuid)
+        self._sendQuitCmd()
 
     def _on_move(self, uuid, row, col):
         """Handles the AiMove response."""
@@ -116,6 +131,12 @@ class AiProcessProtocol(protocol.ProcessProtocol):
                        uuid=uuid,
                        row=i,
                        col=j)
+
+        if (row == -1) or (col == -1):
+            self.log.debug('It seems that we are done. Game was over !')
+            # stops the AI process
+            # self._sendQuitCmd()
+            return
 
         dispatcher.send(Events.aiResponse, uuid=self.uuid, row=i, col=j)
 

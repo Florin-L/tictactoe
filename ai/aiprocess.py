@@ -1,11 +1,12 @@
 import os
 from random import seed, randint
-from twisted.internet import stdio
-from twisted.protocols import basic
+
 from twisted.internet import reactor
+from twisted.internet import stdio
 from twisted.logger import Logger
-from twisted.python.logfile import DailyLogFile
+from twisted.protocols import basic
 from twisted.python import log
+from twisted.python.logfile import DailyLogFile
 
 
 class AiPlayerProtocol(basic.LineReceiver):
@@ -53,10 +54,6 @@ class AiPlayerProtocol(basic.LineReceiver):
         self.log.info('Connection lost from {peer:s}',
                       peer=self.transport.getPeer())
 
-        # stop the reactor
-        # if reactor.running:
-        #    reactor.stop()
-
     def _do_init(self, gameUuid, symbol, depth):
         self._createLogFile(gameUuid)
 
@@ -71,7 +68,7 @@ class AiPlayerProtocol(basic.LineReceiver):
         self.log.debug('_do_move: uuid {uuid}, human move ({row}, {col})',
                        uuid=gameUuid, row=row, col=col)
 
-        if self._moves.count == 0:
+        if len(self._moves) == 0:
             self.log.error('_do_move: no more available moves')
             return
 
@@ -80,14 +77,20 @@ class AiPlayerProtocol(basic.LineReceiver):
         i, j = int(row), int(col)
         self._moves.remove(i * 3 + j)
 
-        if self._moves.count == 0:
-            self.log.error('_do_move: no more available moves')
-            return
+        # choose the move randomly
+        self.log.debug('len(self._moves) = {l}', l=len(self._moves))
 
-        # proceed with a random move
-        seed()
-        n = randint(0, len(self._moves) - 1)
-        m = self._moves[n]
+        if len(self._moves) == 0:
+            self.log.debug('there is no available solution')
+            self.sendLine("MOVE {uuid} {row:d} {col:d}".format(uuid=gameUuid,
+                                                               row=-1,
+                                                               col=-1))
+            return
+        else:
+            seed()
+            n = randint(0, len(self._moves) - 1)
+            m = self._moves[n]
+
         self._moves.remove(m)
 
         self.log.debug('selected position: {m}', m=m)
@@ -98,16 +101,20 @@ class AiPlayerProtocol(basic.LineReceiver):
                                                            row=m / 3,
                                                            col=m % 3))
 
-    def _do_quit(self):
-        self.transport.loseConnection()
 
-    def _createLogFile(self, uuid):
-        logDirPath = '{cwd}\\..\\logs\\aiprocesses'.format(cwd=os.getcwd())
-        if not os.path.exists(logDirPath):
-            os.mkdir(logDirPath)
+def _do_quit(self, uuid):
+    self.log.debug("Quitting the game {uuid}", uuid=uuid)
+    self.transport.loseConnection()
+    reactor.stop()
 
-        logFilePath = '{dir}\\{uuid}.log'.format(dir=logDirPath, uuid=uuid)
-        log.startLogging(DailyLogFile.fromFullPath(logFilePath))
+
+def _createLogFile(self, uuid):
+    logDirPath = '{cwd}\\..\\logs\\aiprocesses'.format(cwd=os.getcwd())
+    if not os.path.exists(logDirPath):
+        os.mkdir(logDirPath)
+
+    logFilePath = '{dir}\\{uuid}.log'.format(dir=logDirPath, uuid=uuid)
+    log.startLogging(DailyLogFile.fromFullPath(logFilePath))
 
 
 def main():
@@ -116,6 +123,9 @@ def main():
 
     stdio.StandardIO(AiPlayerProtocol())
     reactor.run()
+
+    log.msg('Bye !')
+
 
 if __name__ == '__main__':
     main()

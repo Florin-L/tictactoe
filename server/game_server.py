@@ -2,17 +2,20 @@
 # game_server.py
 # -------------------------------------
 
-import sys
 import os
+import sys
 import uuid
-from twisted.spread import pb
+
+from pydispatch import dispatcher
 from twisted.logger import Logger
+from twisted.spread import pb
 
 # configures the python source path for this module
 sys.path.append(os.getcwd() + '/..')
 
 from model.game import Game
 from model.player import Player
+from model.events import Events
 from common.ipc import CopyGameStatus
 
 
@@ -108,6 +111,7 @@ class GameServer(pb.Root):
         guid = uuid.UUID('{%s}' % game_uuid)
         game = self._games.get(guid)
         if game:
+            dispatcher.send(signal=Events.quit, uuid=game_uuid)
             game.listeners.remove(obj)
             self.log.debug('listener for game {guid!s} removed', guid=guid)
         else:

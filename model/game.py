@@ -5,14 +5,15 @@
 import os
 import sys
 import uuid
-from twisted.logger import Logger
-from pydispatch import dispatcher
 
+from pydispatch import dispatcher
+from twisted.logger import Logger
+
+import ai.protocols.aiprotocol as aiprotocol
 from common.constants import Symbol, Status, Errors
+from common.ipc import GameStatus, CopyGameStatus
 from model.board import Board
 from model.events import Events
-from common.ipc import GameStatus, CopyGameStatus
-import ai.protocols.aiprotocol as aiprotocol
 
 
 class Game(object):
@@ -173,6 +174,7 @@ class Game(object):
             self.status = self._computeGameStatus(row, col)
             if self.isGameOver():
                 self.log.info('The game is over : {0:d}'.format(self.status))
+                dispatcher.send(signal=Events.quit, uuid=self.uuid)
             else:
                 self._updateNextSymbol()
                 self.log.debug('Game.makeMove - next symbol is {0:d}'.
@@ -252,9 +254,14 @@ class Game(object):
                        row=row, col=col)
 
         #
-        gameStatus = CopyGameStatus(self.makeMove(row,
-                                                  col,
-                                                  self.aiPlayer.symbol))
+        gameStatus = None
+        if (row == -1) or (col == -1):
+            self.log.debug('_onAiMoveResponse: no moves available')
+            gameStatus = CopyGameStatus(GameStatus(status=Status.Tie))
+        else:
+            gameStatus = CopyGameStatus(self.makeMove(row,
+                                                      col,
+                                                      self.aiPlayer.symbol))
 
         # try to notify the client that the AI's turn has completed
         if self.listeners:

@@ -1,10 +1,12 @@
-#
-# tkgui.py
-# The entry point for our GUI client.
-#
+"""
+    This module implements a GUI client for a tic-tac-toe game.
+"""
 
-import sys
 import os
+import sys
+
+# configures the python source path for this module
+sys.path.append(os.getcwd() + '\..')
 
 try:
     # for Python2
@@ -22,36 +24,34 @@ import zope.interface
 
 from pydispatch import dispatcher
 
-# configures the python source path for this module
-sys.path.append(os.getcwd() + '/..')
-
 from common.constants import Symbol, Status, Errors, PlayerType
 from common.ifaces import IGameEventsHandler
 from model.game import Board
 
 # events
 cmd_newGame = 'cmd_newGame'
+cmd_disconnect = 'cmd_disconnect'
+cmd_move = 'move'
+cmd_resetCell = 'cmd_resetCell'
+
 ev_newGameOk = 'ev_newGameOk'
 ev_newGameFailure = 'ev_newGameFailure'
 
-cmd_disconnect = 'cmd_disconnect'
 ev_disconnected = 'ev_disconnected'
 ev_disconnectedFailed = 'ev_disconnectedFailed'
 
 ev_aiMoved = 'ev_aiMoved'
 ev_aiMovedFailure = 'ev_aiMovedFailure'
-cmd_move = 'move'
 ev_gameOver = 'ev_gameOver'
-
-cmd_resetCell = 'cmd_resetCell'
 
 
 class Client(pb.Referenceable):
     """
+        This class handles the communication between the client
+        and the game which runs on a remote server.
     """
 
     zope.interface.implements(IGameEventsHandler)
-
     log = Logger()
 
     def __init__(self, symbol=Symbol.X):
@@ -64,6 +64,7 @@ class Client(pb.Referenceable):
         self._setupEventHandlers()
 
     def _connect(self):
+        """Connects to the remote server."""
         self.log.debug('Client: _connect')
 
         cf = pb.PBClientFactory()
@@ -72,6 +73,7 @@ class Client(pb.Referenceable):
         d.addCallbacks(self._server_got, self._err)
 
     def _disconnect(self):
+        """Disconnects from the remote server."""
         d = self.server.callRemote('removeListener',
                                    self.uuid,
                                    self)
@@ -95,18 +97,9 @@ class Client(pb.Referenceable):
         """
         self.log.error('error getting object (reason: {reason!s}',
                        reason=reason)
-        self.log.info('shutting down')
-
-        self._quit()
-
-    def _quit(self):
-        """Stops the reactor."""
-        # if reactor.running:
-        #    reactor.stop()
 
     def _newGame(self):
-        """Initiates the creation of a new game.
-        """
+        """Initiates the creation of a new game."""
         playerOneSymbol = self._symbol if self._symbol == Symbol.X \
             else Symbol.O
 
@@ -129,8 +122,7 @@ class Client(pb.Referenceable):
         d.addCallbacks(self._onNewGameCreated, self._onNewGameError)
 
     def _onNewGameCreated(self, guid):
-        """Called when a new game has been successfully created.
-        """
+        """Called when a new game has been successfully created."""
         self.log.debug('Got uuid {uuid}',
                        uuid=repr(guid))
 
@@ -146,14 +138,11 @@ class Client(pb.Referenceable):
                                                      failure=failure))
 
     def _onNewGameError(self, failure):
-        """Called when the creation of a new game has failed.
-        """
+        """Called when the creation of a new game has failed."""
         self.log.error('Failed to create a new game')
-        self._quit()
 
     def _makeMove(self, symbol, row, col):
-        """Sends a move to the game server.
-        """
+        """Sends a move to the game server."""
         self.log.debug('GUID = {uuid}',
                        uuid=self.uuid)
 
@@ -186,8 +175,7 @@ class Client(pb.Referenceable):
             dispatcher.send(signal=ev_gameOver, status=results.status)
 
     def _onMakeMoveError(self, failure):
-        """Called when a 'make move' request has failed.
-        """
+        """Called when a 'make move' request has failed."""
         self.log.error('makeMove failed')
         dispatcher.send(signal=ev_aiMovedFailure, failure=failure)
 
@@ -216,8 +204,7 @@ class Client(pb.Referenceable):
 
 
 class Cell(ttk.Label):
-    """A cell where a piece will be placed on.
-    """
+    """A cell where a piece will be placed on."""
 
     def __init__(self, parent, index, symbol):
         """
@@ -266,6 +253,9 @@ class Cell(ttk.Label):
                         row=row, col=col)
 
     def _aiMoved(self, row, col, symbol):
+        if (row == -1) or (col == -1):
+            return
+
         if self.index == (row * 3 + col):
             s = 'X' if symbol == Symbol.X else 'O'
             self._variable.set(s)
@@ -320,11 +310,11 @@ class App(ttk.Tk):
             self.grid_rowconfigure(i + 1, weight=1)
 
     def _quit(self):
-        """Sends the disconnecting signal and then exits."""
+        """Sends the disconnecting signal to the listeners and then exits."""
+        dispatcher.send(signal='cmd_disconnect')
+
         if not App.isConnected:
             reactor.stop()
-
-        dispatcher.send(signal='cmd_disconnect')
 
     def _onNewGame(self):
         self.log.debug('_onNewGame')
@@ -375,7 +365,7 @@ class App(ttk.Tk):
     def _disconnected_failed(self, reason):
         """Handles the signal 'ev_disconnectedFailed'."""
         self.log.error(
-            'The client failed to be disconnected from the game server.')
+                'The client failed to be disconnected from the game server.')
         reactor.stop()
 
     def _resetBoard(self):
@@ -415,8 +405,11 @@ def main():
     log.msg('The symbol for the human player is ', symbol)
 
     app = App(None, symbol)
+    app.eval('tk::PlaceWindow %s center' % app.winfo_pathname(app.winfo_id()))
+
     tksupport.install(app)
     reactor.run()
+
 
 if __name__ == '__main__':
     main()
