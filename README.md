@@ -1,6 +1,15 @@
 # tictactoe
 A proof-of-concept "client server" game implemented in Python (2.7) featuring Twisted (Reactor, Deffered, Perspective Broker, ProcessProtocol, StandardIO) and PyDispatch.
 
+Dependencies:
+- Twisted framework
+- PyDispatch
+
+The dependencies may be installed using pip:
+
+pip install twisted
+pip install pydispatch
+
 This project serves different purposes:
 
 - help me acquiring new Python skills and improving the existing ones;
