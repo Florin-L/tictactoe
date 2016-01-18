@@ -7,8 +7,12 @@ Dependencies:
 
 The dependencies may be installed using pip:
 
+```
 $ pip install twisted
+```
+```
 $ pip install pydispatch
+```
 
 This project serves different purposes:
 
@@ -28,7 +32,7 @@ Some considerations regarding the "architecture"/"design" used in this proof-of-
 Future plans (listed in a random order):
 
 - improve the AI player's strategy using the MinMax algorithm;
-- *implement a basic GUI client* : DONE
+- ~~implement a basic GUI client~~ : DONE
 - implement the cancelling of a running game;
 - unit tests ...;
 - implement the game server as a REST API service;
