@@ -7,8 +7,8 @@ Dependencies:
 
 The dependencies may be installed using pip:
 
-pip install twisted
-pip install pydispatch
+$ pip install twisted
+$ pip install pydispatch
 
 This project serves different purposes:
 
